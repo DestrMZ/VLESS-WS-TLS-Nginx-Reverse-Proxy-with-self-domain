@@ -56,12 +56,12 @@ systemctl reload nginx
 
 Если nginx -t выдал syntax is ok и test is successful — отлично.
 По итогу проверяем сервер 
-curl http://node1.my-reallitysite.online
+curl http://resurse1.yourdomain.online
 Должно вывести ok.
 
 Шаг 4. 
 Получаем валидный сертификат Let's Enctypto, выполняем слудюющую команду в консоли
-certbot --nginx -d node1.my-reallitysite.online
+certbot --nginx -d resurse1.yourdomain.online
 
 Он попросит:
 email — вводишь любой рабочий
@@ -70,7 +70,7 @@ hare email — как хочешь (N можно)
 про redirect — выбираешь вариант с перенаправлением на https
 
 После успешного выполнения certbot сам пропишет SSL в конфиг и перезапустит nginx.
-curl -v https://node1.my-reallitysite.online
+curl -v https://resurse1.yourdomain.online
 В ответе должно быть что-то вроде HTTP/2 200 и тело ok.
 
 Шаг 5. 
