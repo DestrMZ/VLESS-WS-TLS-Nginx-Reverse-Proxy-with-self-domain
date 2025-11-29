@@ -23,7 +23,6 @@
 nslookup cdn.your-domain.com 8.8.8.8
 ```
 Должен вернуться ваш IP.
-⸻
 
 ## 2. Установка nginx и certbot
 
