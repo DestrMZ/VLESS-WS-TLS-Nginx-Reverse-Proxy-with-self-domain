@@ -1,9 +1,5 @@
 # VLESS + WebSocket + TLS + Nginx Reverse Proxy
 
-Схема максимально стабильная, скрытная и живучая.
-Работает на всех устройствах: iOS, Android, Windows, macOS, Linux, Smart TV.
-_____
-
 ## 0. Что нужно заранее
 Перед началом убедитесь, что у вас есть:
 	•	VPS с Ubuntu 22.04 или 24.04 (не РФ)
