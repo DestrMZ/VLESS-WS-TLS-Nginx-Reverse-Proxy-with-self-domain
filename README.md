@@ -84,6 +84,7 @@ curl http://cdn.your-domain.com
 certbot --nginx -d cdn.your-domain.com
 ```
 Выбираем:
+
 	•	Email — любой рабочий
 	•	Agree — Y
 	•	Share email — N
