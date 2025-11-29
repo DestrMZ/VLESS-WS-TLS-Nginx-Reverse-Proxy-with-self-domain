@@ -2,8 +2,7 @@
 
 Схема максимально стабильная, скрытная и живучая.
 Работает на всех устройствах: iOS, Android, Windows, macOS, Linux, Smart TV.
-
-⸻
+_____
 
 ## 0. Что нужно заранее
 Перед началом убедитесь, что у вас есть:
@@ -11,9 +10,7 @@
 	•	Собственный домен (любой: .online, .site, .com и т.д.)
 	•	SSH-доступ к серверу
 	•	Поддомен для прокси
-
-⸻
-
+	
 ## 1. Настройка DNS
 
 Зайдите в панель управления вашим доменом и создайте A-записи:
@@ -23,38 +20,37 @@ Host	Тип	Значение
 cdn	A	IP вашего VPS
 
 Проверка:
-
+```
 nslookup cdn.your-domain.com 8.8.8.8
-
+```
 Должен вернуться ваш IP.
-
 ⸻
 
 ## 2. Установка nginx и certbot
 
 Подключитесь к серверу через ssh, либо через программы по типу Termius.
-
+```
 ssh root@IP_вашего_сервера
-
+```
 Установите nginx и certbot:
-
+```
 apt update && apt upgrade -y
 apt install -y nginx certbot python3-certbot-nginx
-
+```
 Проверьте, что nginx работает:
-
+```
 systemctl status nginx
-
+```
 ⸻
 
 ## 3. Создание HTTP-конфига nginx
 
 Создаём файл:
-
+```
 nano /etc/nginx/sites-available/cdn.conf
-
+```
 Вставьте:
-
+```
 server {
     listen 80;
     server_name cdn.your-domain.com;
@@ -64,21 +60,21 @@ server {
         add_header Content-Type text/plain;
     }
 }
-
+```
 Подключаем сайт:
-
+```
 ln -s /etc/nginx/sites-available/cdn.conf /etc/nginx/sites-enabled/cdn.conf
 rm /etc/nginx/sites-enabled/default 2>/dev/null || true
-
+```
 Проверяем:
-
+```
 nginx -t
 systemctl reload nginx
-
+```
 Тест:
-
+```
 curl http://cdn.your-domain.com
-
+```
 Должно вернуть ok
 
 ⸻
@@ -86,9 +82,9 @@ curl http://cdn.your-domain.com
 ## 4. Выдача HTTPS-сертификата Let’s Encrypt
 
 Запускаем certbot:
-
+```
 certbot --nginx -d cdn.your-domain.com
-
+```
 Выбираем:
 	•	Email — любой рабочий
 	•	Agree — Y
@@ -96,47 +92,47 @@ certbot --nginx -d cdn.your-domain.com
 	•	Redirect — YES
 
 Проверяем:
-
+```
 curl -v https://cdn.your-domain.com
-
+```
 Если всё хорошо — идём дальше.
 
 ⸻
 
 ## 5. Установка Xray-core
-
+```
 bash <(curl -Ls https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)
-
+```
 Проверка:
-
+```
 which xray
 systemctl status xray
-
+```
 
 ⸻
 
 ## 6. Генерация UUID для пользователей
 
 Для каждого устройства:
-
+```
 uuidgen
-
+```
 Пример:
-
+```
 85226060-dcdf-4a90-8f4a-8cf30f0974d2
-
+```
 
 ⸻
 
 ## 7. Конфиг Xray — VLESS + WS (без TLS)
 
 Открываем:
-
+```
 nano /usr/local/etc/xray/config.json
-
+```
 Пример с несколькими пользователями:
 
-'''
+```
 {
   "log": {
     "loglevel": "warning"
@@ -189,33 +185,29 @@ nano /usr/local/etc/xray/config.json
     }
   ]
 }
-'''
+```
 
 Проверка:
-
-'''
+```
 xray run -test -config /usr/local/etc/xray/config.json
-'''
+```
 
 Если ошибок нет:
-
-'''
+```
 systemctl restart xray
-'''
+```
 
 ⸻
 
 ## 8. Настройка nginx как reverse-proxy для Xray
 
 Правим nginx-конфиг:
-
-'''
+```
 nano /etc/nginx/sites-available/cdn.conf
-'''
+```
 
 Полный рабочий вариант:
-
-'''
+```
 server {
     listen 80;
     server_name cdn.your-domain.com;
@@ -250,14 +242,13 @@ server {
         proxy_set_header X-Forwarded-Host $server_name;
     }
 }
-'''
+```
 
 Перезагружаем:
-
-'''
+```
 nginx -t
 systemctl reload nginx
-'''
+```
 
 ⸻
 
@@ -265,46 +256,44 @@ systemctl reload nginx
 
 Каждый раз:
 	1.	Делаешь новый UUID командой:
-
-'''
+```
 uuidgen
-'''
+```
 
 	2.	Добавляешь в "clients": [ ]
 	3.	Перезапускаешь Xray:
 
-'''
+```
 systemctl restart xray
-'''
+```
 
 ⸻
 
 ## 10. Генерация VLESS ключей для клиентов
 
 Формат:
-
-'''
+```
 vless://UUID@cdn.your-domain.com:443?encryption=none&flow=&type=ws&host=cdn.your-domain.com&path=%2Fws&security=tls&sni=cdn.your-domain.com#Name
-'''
+```
 
 ⸻
 
 ## 11. Чеклист если что-то не работает
 
 Проверяем DNS:
-'''
+```
 nslookup cdn.your-domain.com 8.8.8.8
-'''
+```
 Проверяем nginx:
-'''
+```
 curl -v https://cdn.your-domain.com
 curl -I https://cdn.your-domain.com/ws
-'''
+```
 Проверяем Xray:
-'''
+```
 systemctl status xray
 journalctl -u xray -n 50
-'''
+```
 Проверяем клиента:
 	•	Домен совпадает
 	•	UUID верный
