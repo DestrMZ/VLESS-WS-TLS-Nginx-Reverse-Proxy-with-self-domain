@@ -253,52 +253,23 @@ systemctl reload nginx
 
 ## 9. Добавление новых пользователей
 
-Каждый раз:
+Каждый раз нужно вручную прописывать нового пользователя. Также можно сделать автоскрипт, собственно это фундамент который можете модернизировать как вам удобно.
+
 	1.	Делаешь новый UUID командой:
 ```
 uuidgen
 ```
-
 	2.	Добавляешь в "clients": [ ]
 	3.	Перезапускаешь Xray:
-
 ```
 systemctl restart xray
 ```
 
 ⸻
 
-## 10. Генерация VLESS ключей для клиентов
-
+## 10. Пример ключа, необходимо заменить UUID на пользовательский
 Формат:
 ```
 vless://UUID@cdn.your-domain.com:443?encryption=none&flow=&type=ws&host=cdn.your-domain.com&path=%2Fws&security=tls&sni=cdn.your-domain.com#Name
 ```
-
-⸻
-
-## 11. Чеклист если что-то не работает
-
-Проверяем DNS:
-```
-nslookup cdn.your-domain.com 8.8.8.8
-```
-Проверяем nginx:
-```
-curl -v https://cdn.your-domain.com
-curl -I https://cdn.your-domain.com/ws
-```
-Проверяем Xray:
-```
-systemctl status xray
-journalctl -u xray -n 50
-```
-Проверяем клиента:
-	•	Домен совпадает
-	•	UUID верный
-	•	TLS включён
-	•	SNI = домен
-	•	Transport = WS
-	•	Path = /ws
-
 ⸻
