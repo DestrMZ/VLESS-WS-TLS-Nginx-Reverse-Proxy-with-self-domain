@@ -1,150 +1,142 @@
-# Настройка VLESS + WebSocket + TLS  
-## Полностью рабочая связка через Nginx Reverse Proxy и собственный домен  
-(Без 3x-ui, X-ui и других панелек — чистый Xray + Nginx + Let’s Encrypt)
+# VLESS + WebSocket + TLS + Nginx Reverse Proxy
 
----
+Схема максимально стабильная, скрытная и живучая.
+Работает на всех устройствах: iOS, Android, Windows, macOS, Linux, Smart TV.
 
-### Подготовка
+⸻
 
-1. Арендуйте VPS в любой стране (кроме РФ)
-2. Купите или получите бесплатно домен любого уровня (.com, .net, .org, .xyz и т.д.)
-3. Привяжите домен к IP вашего сервера:
+## 0. Что нужно заранее
+Перед началом убедитесь, что у вас есть:
+	•	VPS с Ubuntu 22.04 или 24.04 (не РФ)
+	•	Собственный домен (любой: .online, .site, .com и т.д.)
+	•	SSH-доступ к серверу
+	•	Поддомен для прокси
 
-| Тип | Хост        | Значение       |
-|-----|-------------|------------------|
-| A   | @           | ваш IP VPS       |
-| A   | resurse1    | ваш IP VPS       |
+⸻
 
-> Пример:  
-> `yourdomain.com` → IP  
-> `resurse1.yourdomain.com` → IP
+## 1. Настройка DNS
 
-Подождите 10–15 минут и проверьте:
+Зайдите в панель управления вашим доменом и создайте A-записи:
 
-```bash
-ping yourdomain.com
-ping resurse1.yourdomain.com
-```
+Host	Тип	Значение
+@	A	IP вашего VPS
+cdn	A	IP вашего VPS
 
-Или на сайте: https://dnschecker.org/
+Проверка:
 
----
+nslookup cdn.your-domain.com 8.8.8.8
 
-### Подключаемся к серверу
+Должен вернуться ваш IP.
 
-Рекомендую Termius, PuTTY, MobaXterm или обычный SSH.
+⸻
 
-Сервер должен быть чистым (без панелей типа 3x-ui).
+## 2. Установка nginx и certbot
 
----
+Подключитесь к серверу через ssh, либо через программы по типу Termius.
 
-### Шаг 1. Установка Nginx и Certbot
+ssh root@IP_вашего_сервера
 
-```bash
-sudo apt update
-sudo apt install -y nginx certbot python3-certbot-nginx
-```
+Установите nginx и certbot:
 
-Проверяем статус Nginx:
+apt update && apt upgrade -y
+apt install -y nginx certbot python3-certbot-nginx
 
-```bash
+Проверьте, что nginx работает:
+
 systemctl status nginx
-```
 
-Должно быть `active (running)`.
+⸻
 
----
+## 3. Создание HTTP-конфига nginx
 
-### Шаг 2. Создаём временный HTTP-конфиг для поддомена
+Создаём файл:
 
-```bash
-sudo nano /etc/nginx/sites-available/resurse1.conf
-```
+nano /etc/nginx/sites-available/cdn.conf
 
-Вставляем:
+Вставьте:
 
-```nginx
 server {
     listen 80;
-    server_name resurse1.yourdomain.com;
+    server_name cdn.your-domain.com;
 
     location / {
         return 200 'ok';
         add_header Content-Type text/plain;
     }
 }
-```
 
-Активируем и перезапускаем:
+Подключаем сайт:
 
-```bash
-sudo ln -s /etc/nginx/sites-available/resurse1.conf /etc/nginx/sites-enabled/
-sudo rm /etc/nginx/sites-enabled/default 2>/dev/null || true
-sudo nginx -t && sudo systemctl reload nginx
-```
+ln -s /etc/nginx/sites-available/cdn.conf /etc/nginx/sites-enabled/cdn.conf
+rm /etc/nginx/sites-enabled/default 2>/dev/null || true
 
-Проверка:
+Проверяем:
 
-```bash
-curl http://resurse1.yourdomain.com
-# Должно вернуть: ok
-```
+nginx -t
+systemctl reload nginx
 
----
+Тест:
 
-### Шаг 3. Получаем бесплатный SSL-сертификат Let’s Encrypt
+curl http://cdn.your-domain.com
 
-```bash
-sudo certbot --nginx -d resurse1.yourdomain.com
-```
+Должно вернуть ok
 
-- Введите email  
-- Согласитесь с условиями (Y)  
-- Рассылка — на ваш выбор (N)  
-- Выберите вариант 2 (Redirect HTTP → HTTPS)
+⸻
 
-Certbot сам добавит SSL в конфиг SSL и сделает редирект.
+## 4. Выдача HTTPS-сертификата Let’s Encrypt
 
-Проверка:
+Запускаем certbot:
 
-```bash
-curl -v https://resurse1.yourdomain.com
-# Должно быть HTTP/2 200 и тело "ok"
-```
+certbot --nginx -d cdn.your-domain.com
 
----
+Выбираем:
+	•	Email — любой рабочий
+	•	Agree — Y
+	•	Share email — N
+	•	Redirect — YES
 
-### Шаг 4. Установка Xray-core (последняя версия)
+Проверяем:
 
-```bash
+curl -v https://cdn.your-domain.com
+
+Если всё хорошо — идём дальше.
+
+⸻
+
+## 5. Установка Xray-core
+
 bash <(curl -Ls https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)
-```
 
 Проверка:
 
-```bash
 which xray
 systemctl status xray
-```
 
----
 
-### Шаг 5. Генерируем UUID и настраиваем VLESS+WS
+⸻
 
-```bash
+## 6. Генерация UUID для пользователей
+
+Для каждого устройства:
+
 uuidgen
-# Скопируйте полученный UUID
-```
 
-Редактируем конфиг Xray:
+Пример:
 
-```bash
-sudo nano /usr/local/etc/xray/config.json
-```
+85226060-dcdf-4a90-8f4a-8cf30f0974d2
 
-Заменяем содержимое на:
 
-```json
+⸻
+
+## 7. Конфиг Xray — VLESS + WS (без TLS)
+
+Открываем:
+
+nano /usr/local/etc/xray/config.json
+
+Пример с несколькими пользователями:
+
+'''
 {
   "log": {
     "loglevel": "warning"
@@ -157,9 +149,19 @@ sudo nano /usr/local/etc/xray/config.json
       "settings": {
         "clients": [
           {
-            "id": "ВАШ-UUID-ЗДЕСЬ",
+            "id": "UUID-MAIN",
             "flow": "",
             "email": "main"
+          },
+          {
+            "id": "UUID-MACBOOK",
+            "flow": "",
+            "email": "macbook"
+          },
+          {
+            "id": "UUID-IPHONE14",
+            "flow": "",
+            "email": "iphone14"
           }
         ],
         "decryption": "none"
@@ -170,7 +172,7 @@ sudo nano /usr/local/etc/xray/config.json
         "wsSettings": {
           "path": "/ws",
           "headers": {
-            "Host": "resurse1.yourdomain.com"
+            "Host": "cdn.your-domain.com"
           }
         }
       }
@@ -187,82 +189,128 @@ sudo nano /usr/local/etc/xray/config.json
     }
   ]
 }
-```
+'''
 
-Сохраняем и перезапускаем:
+Проверка:
 
-```bash
-sudo systemctl restart xray
-sudo systemctl status xray
-```
+'''
+xray run -test -config /usr/local/etc/xray/config.json
+'''
 
----
+Если ошибок нет:
 
-### Шаг 6. Финальный конфиг Nginx (TLS + прокси на Xray)
+'''
+systemctl restart xray
+'''
 
-```bash
-sudo nano /etc/nginx/sites-available/resurse1.conf
-```
+⸻
 
-Полный рабочий конфиг:
+## 8. Настройка nginx как reverse-proxy для Xray
 
-```nginx
+Правим nginx-конфиг:
+
+'''
+nano /etc/nginx/sites-available/cdn.conf
+'''
+
+Полный рабочий вариант:
+
+'''
 server {
     listen 80;
-    server_name resurse1.yourdomain.com;
+    server_name cdn.your-domain.com;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name resurse1.yourdomain.com;
+    server_name cdn.your-domain.com;
 
-    ssl_certificate /etc/letsencrypt/live/resurse1.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/resurse1.yourdomain.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/cdn.your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cdn.your-domain.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
-    # Заглушка для обычных запросов
     location / {
         return 404;
     }
 
-    # Проксируем WebSocket на Xray
     location /ws {
         proxy_redirect off;
         proxy_pass http://127.0.0.1:10000;
+
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
+
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $server_name;
     }
 }
-```
+'''
 
-Проверка и перезапуск:
+Перезагружаем:
 
-```bash
-sudo nginx -t && sudo systemctl reload nginx
-```
+'''
+nginx -t
+systemctl reload nginx
+'''
 
----
+⸻
 
-### Готово! Настройка клиента (Nekobox, v2rayNG, Streisand, Hiddify и др.)
+## 9. Добавление новых пользователей
 
-```
-Тип: VLESS
-Адрес: resurse1.yourdomain.com
-Порт: 443
-UUID: ваш-uuid-из-конфига
-Шифрование: none
-Тип передачи: WebSocket (ws)
-Путь (Path): /ws
-Host / SNI / Header Host: resurse1.yourdomain.com
-TLS: включён
-Allow Insecure: выключен (если сертификат валидный)
-```
+Каждый раз:
+	1.	Делаешь новый UUID командой:
 
-Сохраняете — подключаетесь — наслаждаетесь чистым, быстрым и полностью своим VLESS+WS+TLS сервером.
+'''
+uuidgen
+'''
 
-Удачи и стабильного пинга! 🚀
+	2.	Добавляешь в "clients": [ ]
+	3.	Перезапускаешь Xray:
+
+'''
+systemctl restart xray
+'''
+
+⸻
+
+## 10. Генерация VLESS ключей для клиентов
+
+Формат:
+
+'''
+vless://UUID@cdn.your-domain.com:443?encryption=none&flow=&type=ws&host=cdn.your-domain.com&path=%2Fws&security=tls&sni=cdn.your-domain.com#Name
+'''
+
+⸻
+
+## 11. Чеклист если что-то не работает
+
+Проверяем DNS:
+'''
+nslookup cdn.your-domain.com 8.8.8.8
+'''
+Проверяем nginx:
+'''
+curl -v https://cdn.your-domain.com
+curl -I https://cdn.your-domain.com/ws
+'''
+Проверяем Xray:
+'''
+systemctl status xray
+journalctl -u xray -n 50
+'''
+Проверяем клиента:
+	•	Домен совпадает
+	•	UUID верный
+	•	TLS включён
+	•	SNI = домен
+	•	Transport = WS
+	•	Path = /ws
+
+⸻
