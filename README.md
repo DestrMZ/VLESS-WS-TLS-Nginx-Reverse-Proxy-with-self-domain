@@ -18,7 +18,7 @@
 | cdn  | A   | IP вашего VPS   |
 
 Проверка:
-```
+
 nslookup cdn.your-domain.com 8.8.8.8
 ```
 Должен вернуться ваш IP.
