@@ -5,8 +5,7 @@
 
 	•	VPS с Ubuntu 22.04 или 24.04 (не РФ)
 	•	Собственный домен (любой: .online, .site, .com и т.д.)
-	•	SSH-доступ к серверу
-	•	Поддомен для прокси
+	•	Также нужно будет создать поддомен для прокси
 	
 ## 1. Настройка DNS
 
@@ -38,8 +37,6 @@ apt install -y nginx certbot python3-certbot-nginx
 ```
 systemctl status nginx
 ```
-⸻
-
 ## 3. Создание HTTP-конфига nginx
 
 Создаём файл:
@@ -74,8 +71,6 @@ curl http://cdn.your-domain.com
 ```
 Должно вернуть ok
 
-⸻
-
 ## 4. Выдача HTTPS-сертификата Let’s Encrypt
 
 Запускаем certbot:
@@ -94,8 +89,6 @@ certbot --nginx -d cdn.your-domain.com
 curl -v https://cdn.your-domain.com
 ```
 Если в ответе HTTP/1.1 200 и тело ok — всё в порядке. Можно также просто зайти на сайт в браузере
-
-⸻
 
 ## 5. Установка Xray-core
 ```
@@ -194,8 +187,6 @@ xray run -test -config /usr/local/etc/xray/config.json
 systemctl restart xray
 ```
 
-⸻
-
 ## 8. Настройка nginx как reverse-proxy для Xray
 
 Правим nginx-конфиг:
@@ -247,8 +238,6 @@ nginx -t
 systemctl reload nginx
 ```
 
-⸻
-
 ## 9. Добавление новых пользователей
 
 Каждый раз нужно вручную прописывать нового пользователя. Также можно сделать автоскрипт, собственно это фундамент который можете модернизировать как вам удобно, мб позже добавлю скрипт
@@ -262,7 +251,6 @@ uuidgen
 ```
 systemctl restart xray
 ```
-⸻
 
 ## 10. Пример ключа, необходимо заменить UUID на пользовательский
 Формат:
